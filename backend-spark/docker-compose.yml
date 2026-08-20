@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # ─── Express Backend API ───
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eduspark-backend-api
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/eduspark
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - eduspark-network
+
+  # ─── MongoDB Database ───
+  mongo:
+    image: mongo:7.0
+    container_name: eduspark-mongo
+    restart: always
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - eduspark-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongo_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+networks:
+  eduspark-network:
+    driver: bridge
